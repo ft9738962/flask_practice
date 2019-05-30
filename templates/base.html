@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+    {% from 'macros.html' import static_file %}
+    <head>
+        {% block head %}
+            <meta charset="utf-8">
+            <title>{% block title %}Template - TestFlask{% endblock %}</title>
+            {{ static_file('icon', 'favicon.ico') }}
+            {% block styles %}
+                {{ static_file('css', 'css/bootstrap.min.css') }}   
+                {{ static_file('css', 'css/bootstrap.min.css') }}
+            {% endblock %}
+            
+        {% endblock %}    
+    </head>
+    <body>
+        <nav>
+            <ul><li><a href="{{ url_for('index') }}">Home</a></li></ul>
+        </nav>
+        <main>
+            {% for message in get_flashed_messages() %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
+            {% block content %}{% endblock %}
+        </main>
+        <footer>
+            {% block footer %}{% endblock %}
+        </footer>
+        {% block scripts %}
+            {{ static_file('js', 'js/jquery.min.js') }}
+            {{ static_file('js', 'js/popper.min.js') }}
+            {{ static_file('js', 'js/bootstrap.min.js') }}
+        {% endblock %}
+    </body>
+</html>
