@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<form method="post">
+    {{ form.csrf_token }} <!-- 渲染CSRF令牌隐藏字段 -->
+    <div class="form-group">
+        {{ form.username.label }}
+        {{ form.username(class='form-control') }}
+        {% for message in form.username.errors %}
+            <small class="error">{{ message }}</small>
+        {% endfor %}
+    </div>
+    <div class="form-group">
+        {{ form.password.label }}
+        {{ form.password(class='form-control') }}
+        {% for message in form.password.errors %}
+            <small class="error">{{ message }}</small>
+        {% endfor %}
+    </div>
+    <div class="form-check">
+        {{ form.remember(class='form-check-input') }}
+        {{ form.remember.label }}
+    </div>
+    {{ form.submit(class='btn btn-primary') }}<br>
+</form>
+{% endblock %}
