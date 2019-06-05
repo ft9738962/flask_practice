@@ -1,6 +1,7 @@
 from flask import Flask, url_for, redirect, render_template, Markup, flash, request
-from forms import LoginForm
-import click
+from flask import send_from_directory, session
+from forms import LoginForm, UploadForm
+import click, os, uuid
 
 app = Flask(__name__)
 app.secret_key = 'secret string'
@@ -47,12 +48,14 @@ def musical(s):
 def watchlist():
     return render_template('watchlist.html', user=user, movies=movies)
 
+#利用globals添加全局参数
 def bar():
     return 'I am bar.'
 foo = 'I am foo.'
 app.jinja_env.globals['bar'] = bar
 app.jinja_env.globals['foo'] = foo
 
+#自定义过滤器
 def smiling(s):
     return s + ' :) '
 app.jinja_env.filters['smiling'] = smiling
@@ -79,8 +82,13 @@ def page_not_found(e):
 @app.route('/basic', methods=['GET', 'POST'])
 def basic():
     form = LoginForm() # GET + POST
+    '''
+    以下使用validate_on_submit()对request进行验证
+    其作用相当于 if request.method=='Post' and form.validate()的组合
+    如果请求为POST类型，则验证数据类型，通过则获取用户名，如果请求为GET类型，则直接return渲染template
+    '''
     if form.validate_on_submit(): # 当使用METHOD为POST,PUT,PATCH,DELETE时会验证
-        username = form.username.data
+        username = form.username.data # 通常form.字段.data默认包含这个字段的数据
         flash(f'Welcome home, {username}!')
         return redirect(url_for('index'))
     return render_template('basic.html', form=form)
@@ -96,3 +104,27 @@ def bootstrap():
         flash(f'Welcome home, {username}!')
         return redirect(url_for('index'))
     return render_template('bootstrap.html', form=form)
+
+app.config['UPLOAD_PATH'] = os.path.join(app.root_path, 'uploads')
+
+def random_filename(filename):
+    ext = os.path.splitext(filename)[1]
+    new_filename = uuid.uuid4().hex + ext
+    return new_filename
+
+@app.route('/upload', methods=['GET', 'POST']) #上传图片表单
+def upload():
+    form = UploadForm()
+    if form.validate_on_submit():
+        f = form.photo.data
+        filename = random_filename(f.filename)
+        f.save(os.path.join(app.config['UPLOAD_PATH'], filename))
+        flash('Upload success.')
+        session['filenames'] = [filename] #为兼容多文件传输
+        return redirect(url_for('get_file'))
+    return render_template('upload.html', form=form)
+
+@app.route('/uploads/<path:filename>')
+def get_file(filename):
+    return send_from_directory(app.config['UPLOAD_PATH'], filename)
+
