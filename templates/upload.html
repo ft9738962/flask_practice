@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 {% from 'macros.html' import form_field %}
+<h2>图片上传</h2>
 <form method="post" enctype="multipart/form-data">
     {{ form.csrf_token }}
     <div class_='form-group'>

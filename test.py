@@ -121,10 +121,17 @@ def upload():
         f.save(os.path.join(app.config['UPLOAD_PATH'], filename))
         flash('Upload success.')
         session['filenames'] = [filename] #为兼容多文件传输
-        return redirect(url_for('get_file'))
+        return redirect(url_for('show_images'))
     return render_template('upload.html', form=form)
+
+@app.route('/uploaded-images')
+def show_images():
+    return render_template('uploaded.html')
 
 @app.route('/uploads/<path:filename>')
 def get_file(filename):
     return send_from_directory(app.config['UPLOAD_PATH'], filename)
 
+@app.route('/multi-upload', methods=['GET', 'POST'])
+def multi_upload():
+    

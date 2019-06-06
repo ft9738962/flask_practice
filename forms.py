@@ -42,6 +42,5 @@ class UploadForm(FlaskForm):
     submit = SubmitField()
 
 class MultiUploadForm(FlaskForm):
-    photo = MultipleFileField('Upload Image', validators=[FileRequired(), FileAllowed(['jpg','jpeg','png','gif'],
-    message='请提交jpg/jpeg/png/gif格式文件')])
+    photo = MultipleFileField('Upload Image', validators=[DataRequired()])
     submit = SubmitField()
