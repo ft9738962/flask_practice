@@ -1,10 +1,21 @@
 from flask import Flask, url_for, redirect, render_template, Markup, flash, request
 from flask import send_from_directory, session
-from forms import LoginForm, UploadForm
+from forms import LoginForm, UploadForm, MultiUploadForm, RichTextForm, NewPostForm
+from forms import SigninForm, RegisterForm, SigninForm2, RegisterForm2
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
+from flask_ckeditor import CKEditor, upload_success, upload_fail
 import click, os, uuid
 
 app = Flask(__name__)
 app.secret_key = 'secret string'
+
+app.config['UPLOAD_PATH'] = os.path.join(app.root_path, 'uploads')
+app.config['ALLOWED_EXTENSIONS'] = ['png', 'jpg', 'jpeg', 'gif']
+app.config['CKEDITOR_SERVE_LOCAL'] = True
+app.config['CKEDITOR_FILE_UPLOADER'] = 'upload_for_ckeditor'
+
+ckeditor = CKEditor(app)
 
 @app.route('/')
 def index():
@@ -132,6 +143,110 @@ def show_images():
 def get_file(filename):
     return send_from_directory(app.config['UPLOAD_PATH'], filename)
 
+def allowed_file(filename):
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
 @app.route('/multi-upload', methods=['GET', 'POST'])
 def multi_upload():
-    
+    form = MultiUploadForm()
+    if request.method == 'POST':
+        filenames = []
+        #验证CSRF令牌
+        try:
+            validate_csrf(form.csrf_token.data)
+        except ValidationError:
+            flash('CSRF token error')
+            return redirect(url_for('multi_upload'))
+        #检查文件是否存在
+        if 'photo' not in request.files:
+            flash('This field is required')
+            return redirect(url_for('multi_upload'))
+        #循环保存文件
+        for f in request.files.getlist('photo'):
+            if f and allowed_file(f.filename):
+                filename = random_filename(f.filename)
+                f.save(os.path.join(app.config['UPLOAD_PATH'], filename))
+                filenames.append(filename)
+            else:
+                flash('Invalid file type')
+                return redirect(url_for('multi_upload'))
+        flash('upload success')
+        session['filenames'] = filenames
+        return redirect(url_for('show_images'))
+    return render_template('upload.html', form=form)
+
+@app.route('/ckeditor', methods=['GET', 'POST'])
+def integrate_ckeditor():
+    form = RichTextForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        body = form.body.data
+        flash('Your post is published')
+        return render_template('post.html', title=title, body=body)
+    return render_template('ckeditor.html', form=form)
+
+@app.route('/two-submits', methods=['GET', 'POST'])
+def two_submits():
+    form = NewPostForm()
+    if form.validate_on_submit():
+        if form.save.data:
+            #save it...
+            flash('You click the "Save" button')
+        elif form.publish.data:
+            #publish it...
+            flash('You click the "Publish" button')
+        return redirect(url_for('index'))
+    return render_template('2submit.html', form=form)
+
+@app.route('/multi-form', methods=['GET', 'POST'])
+def multi_form():
+    signin_form = SigninForm()
+    register_form = RegisterForm()
+
+    if signin_form.submit1.data and signin_form.validate():
+        username = signin_form.username.data
+        flash(f'{username}, you just submit the Signin Form.')
+        return redirect(url_for('index'))
+
+    if register_form.submit2.data and register_form.validate():
+        username = register_form.username.data
+        flash(f'{username}, you just sumbit the Register Form.')
+        return redirect(url_for('index'))
+
+    return render_template('2form.html', signin_form=signin_form, register_form=register_form)
+
+@app.route('/multi-form-multi-view')
+def multi_form_multi_view():
+    signin_form = SigninForm2()
+    register_form = RegisterForm2()
+    return render_template('2form2view.html', signin_form=signin_form, register_form=register_form)
+
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(f'Error in the {getattr(form, field).label.text} field - {error}')
+
+@app.route('/handle-signin', methods=['POST'])
+def handle_signin():
+    signin_form = SigninForm2()
+    register_form = RegisterForm2()
+
+    if signin_form.validate_on_submit():
+        username = signin_form.username.data
+        flash(f'{username}, you just submit the Signin Form.')
+        return redirect(url_for('index'))
+    flash_errors(signin_form)
+    return render_template('2form2view.html', signin_form=signin_form, register_form=register_form)
+
+@app.route('/handle-register', methods=['POST'])
+def handle_register():
+    signin_form = SigninForm2()
+    register_form = RegisterForm2()
+
+    if register_form.validate_on_submit():
+        username = register_form.username.data
+        flash(f'{username}, you just submit the Register Form.')
+        return redirect(url_for('index'))
+    flash_errors(register_form)
+    return render_template('2form2view.html', signin_form=signin_form, register_form=register_form)
