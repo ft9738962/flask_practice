@@ -8,7 +8,7 @@ from flask_ckeditor import CKEditor, upload_success, upload_fail
 import click, os, uuid
 
 app = Flask(__name__)
-app.secret_key = 'secret string'
+app.secret_key = os.getenv('SECRET_KEY','secret string')
 
 app.config['UPLOAD_PATH'] = os.path.join(app.root_path, 'uploads')
 app.config['ALLOWED_EXTENSIONS'] = ['png', 'jpg', 'jpeg', 'gif']
