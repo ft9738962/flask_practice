@@ -12,6 +12,5 @@
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
-{{ ckeditor.load(pkg_type="full") }}
+    {{ static_file('js', 'ckeditor/ckeditor.js') }} 
 {% endblock %}
