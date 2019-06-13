@@ -22,19 +22,25 @@ def is_abcdefgh(message=None):
             raise ValidationError(message)
     return _is_abcdefgh
 
-class LoginForm(FlaskForm):
+class BasicForm(FlaskForm): #type默认为basic基础表单，type可选为bootstrap表单
     username = StringField('Username', validators=[DataRequired(message='名字不能为空')])
     password = PasswordField('Password', validators=[DataRequired(is_12345678), Length(8, 128, message='密码应为8至128位')])
-    code = PasswordField('Code', validators=[is_12345678])
-    vcode = PasswordField('Vcode', validators=[is_abcdefgh('dont mess with 12345678')])
     remember = BooleanField('Remember me')
     submit = SubmitField('Log in')
+
+class BootForm(FlaskForm): #type默认为basic基础表单，type可选为bootstrap表单
+    username = StringField('Username', validators=[DataRequired(message='名字不能为空')])
+    password = PasswordField('Password', validators=[DataRequired(is_12345678), Length(8, 128, message='密码应为8至128位')])
     def validate_username(form, field): 
         '''将"validate_字段名"作为方法就可以自定义验证字段值
         这种验证只能对于某个字段使用，被称为行内验证(inline validator)
         '''
         if field.data != 'lemonade':
             raise ValidationError('Not lemonade!')
+    code = PasswordField('Code', validators=[is_12345678])
+    vcode = PasswordField('Vcode', validators=[is_abcdefgh('dont mess with 12345678')])
+    remember = BooleanField('Remember me')
+    submit = SubmitField('Log in')
 
 class UploadForm(FlaskForm):
     photo = FileField('Upload Image', 
