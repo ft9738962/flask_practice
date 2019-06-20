@@ -12,6 +12,7 @@ python-dotenv = "*"
 flask-wtf = "*"
 flask-ckeditor = "*"
 gunicorn = "*"
+flask-sqlalchemy = "*"
 
 [requires]
 python_version = "3.6"

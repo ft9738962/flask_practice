@@ -1,14 +1,11 @@
 from flask import Flask, url_for, redirect, render_template, Markup, flash, request
-from flask import send_from_directory, session
-from forms import BasicForm, BootForm, UploadForm, MultiUploadForm, RichTextForm, NewPostForm
-from forms import SigninForm, RegisterForm, SigninForm2, RegisterForm2
-from flask_wtf.csrf import validate_csrf
-from wtforms.validators import ValidationError
-from flask_ckeditor import CKEditor, upload_success, upload_fail
+from flask_sqlalchemy import SQLAlchemy
 import click, os, uuid
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY','secret string')
+
+db = SQLAlchemy(app)
 
 app.config['UPLOAD_PATH'] = os.path.join(app.root_path, 'uploads')
 app.config['ALLOWED_EXTENSIONS'] = ['png', 'jpg', 'jpeg', 'gif']
@@ -21,6 +18,7 @@ user = {
     'username': 'Max Qiu',
     'bio': 'A boy who loves movies and music.'
 }
+
 movies = [
     {'name': 'My Neighbor Totoro', 'year': '1988'},
     {'name': 'Three Colours trilogy', 'year': '1993'},
