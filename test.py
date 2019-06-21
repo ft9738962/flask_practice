@@ -10,6 +10,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///'+o
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+# 当使用flask shell启动python shell时，使用shell_context_processor注册的shell上下文处理函数都会自动执行
+@app.shell_context_processor
+def make_shell_context():
+    return dict(db=db, Note=Note, Author=Author, Article=Article)
+
 # 对于重复使用的命令，可以编写flask命令
 @app.cli.command()
 def initdb():
@@ -22,6 +27,18 @@ class Note(db.Model):
 
     def __repr__(self):
         return f'<Note {self.body}>'
+
+class Author(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), unique=True)
+    phone = db.Column(db.String(20))
+    articles = db.relationship('Article')
+
+class Article(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(50), index=True)
+    body = db.Column(db.Text)
+    author_id = db.Column(db.Integer, db.ForeignKey('author.id'))
 
 @app.route('/', methods=['GET'])
 def index():
