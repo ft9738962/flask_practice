@@ -13,13 +13,22 @@ db = SQLAlchemy(app)
 # 当使用flask shell启动python shell时，使用shell_context_processor注册的shell上下文处理函数都会自动执行
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, Note=Note, Author=Author, Article=Article)
+    return dict(db=db, Note=Note, Author=Author, Article=Article, Writer=Writer, Book=Book)
 
 # 对于重复使用的命令，可以编写flask命令
 @app.cli.command()
-def initdb():
+@click.option('--drop', is_flag=True, help='Create after drop')
+def initdb(drop):
+    '''
+    Initialize the database
+    '''
+    if drop:
+        click.confirm('This operation will delete the database, do you want to continue?',
+                      abort=True)
+        db.drop_all()
+        click.echo('Drop tables')
     db.create_all()
-    click.echo('Initialized database.')
+    click.echo('Initialized database')
 
 class Note(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,6 +48,49 @@ class Article(db.Model):
     title = db.Column(db.String(50), index=True)
     body = db.Column(db.Text)
     author_id = db.Column(db.Integer, db.ForeignKey('author.id'))
+
+class Writer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), unique=True)
+    books = db.relationship('Book', back_populates='writer') #back_populates可以反向关联关系
+
+class Book(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(50), index=True)
+    writer_id = db.Column(db.Integer, db.ForeignKey('writer.id'))
+    writer = db.relationship('Writer', back_populates='books')
+
+class Singer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), unique=True)
+    songs = db.relationship('Song', backref='singer') #backref是back_populates的简化，只需要单边设置就可以绑定
+
+class Song(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), index=True)
+    singer_id = db.Column(db.Integer, db.ForeignKey('singer.id'))
+
+#多对多关系，添加辅助关系表
+association_table = db.Table('association', 
+                             db.Column('student_id', db.Integer, db.ForeignKey('student.id')), 
+                             db.Column('teacher_id', db.Integer, db.ForeignKey('teacher.id'))
+                            )
+
+class Student(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), unique=True)
+    grade = db.Column(db.String(20))
+    teachers = db.relationship('Teacher',
+                               secondary=association_table,
+                               back_populates='students') #在relationship中添加secondary参数，指定关系表
+    
+class Teacher(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(70), unique=True)
+    office = db.Column(db.String(20))
+    students = db.relationship('Student',
+                               secondary=association_table,
+                               back_populates='tearchers')
 
 @app.route('/', methods=['GET'])
 def index():
@@ -80,5 +132,5 @@ def delete_note(note_id):
         flash('The note has been deleted')
         return redirect(url_for('index'))
     else:
-        abort(400)
+        abort(404)
     return render_template('index')
